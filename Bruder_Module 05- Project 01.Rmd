@@ -1,0 +1,314 @@
+---
+title: "bruder_module05_project01"
+author: "Geoffrey Bruder"
+date: "2024-10-14"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+\newpage
+
+------------------------------------------------------------------------
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#  Global Data Science Salaries: Navigating Wide Ranges and Remote Work Considerations to Attract Top Talent in a Competitive Market
+
+A visual analysis of 
+Salary Distribution: U.S.A. versus Offshore
+Average Salary by Experience Level: U.S.A. versus Offshore
+Salary versus Remote Work Ratio
+
+Prepared by:  Geoffrey Bruder
+
+
+```{r}
+# Load necessary libraries
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(knitr)
+```
+
+
+```{r}
+# Read the data
+data_path <- "/Users/Main/Documents/DSE5002/r project data.csv"
+data <- read_csv(data_path)
+
+
+# Filter data for full-time positions
+full_time_data <- data %>% filter(employment_type == "FT")
+
+# Summarize the full_time_data dataframe
+summary(full_time_data)
+
+# Display the first few rows of the full_time_data dataframe
+head(full_time_data)
+
+# List the column names of the full_time_data dataframe
+colnames(full_time_data)
+
+# Convert the column names of full_time_data dataframe to a list
+colnames_list <- as.list(colnames(full_time_data))
+```
+
+```{r}
+# Summary statistics for U.S. vs. offshore salaries
+us_salaries <- full_time_data %>% filter(employee_residence == "US")
+offshore_salaries <- full_time_data %>% filter(employee_residence != "US")
+
+# Summary stats
+us_summary <- us_salaries %>% summarize(
+  avg_salary = mean(salary_in_usd, na.rm = TRUE),
+  median_salary = median(salary_in_usd, na.rm = TRUE),
+  sd_salary = sd(salary_in_usd, na.rm = TRUE)
+)
+
+offshore_summary <- offshore_salaries %>% summarize(
+  avg_salary = mean(salary_in_usd, na.rm = TRUE),
+  median_salary = median(salary_in_usd, na.rm = TRUE),
+  sd_salary = sd(salary_in_usd, na.rm = TRUE)
+)
+```
+
+```{r}
+# Reformat the avg_salary, median_salary, and sd_salary columns
+us_summary <- us_summary %>%
+  mutate(
+    avg_salary = paste0("$", formatC(avg_salary, format = "f", digits = 2)),
+    median_salary = paste0("$", formatC(median_salary, format = "f", digits = 2)),
+    sd_salary = paste0("$", formatC(sd_salary, format = "f", digits = 2))
+  )
+
+# View the reformatted dataframe
+print(us_summary)
+
+```
+
+```{r}
+# Reformat the avg_salary, median_salary, and sd_salary columns
+offshore_summary <- offshore_summary %>%
+  mutate(
+    avg_salary = paste0("$", formatC(avg_salary, format = "f", digits = 2)),
+    median_salary = paste0("$", formatC(median_salary, format = "f", digits = 2)),
+    sd_salary = paste0("$", formatC(sd_salary, format = "f", digits = 2))
+  )
+
+# View the reformatted dataframe
+print(offshore_summary)
+
+
+```
+
+#  Key Salary Metrics for Analyzing Compensation Data
+
+```{r}
+cat("Based on the analysis:  
+    For U.S.-based data scientists: 
+    average salary:", us_summary$avg_salary, 
+    "median salary:", us_summary$median_salary,  
+    "standard deviation", us_summary$sd_salary, 
+     
+    "For Offshore-based data scientists:, 
+    average salary:", offshore_summary$avg_salary, 
+    "median salary:", offshore_summary$median_salary,
+    "standard deviation:", offshore_summary$sd_salary
+)
+```
+
+#  Boxplot for Salary Distribution 
+
+There is a wide variation in salary distributions across different residences.
+Some residences have higher median salaries compared to others.
+The U.S. shows a relatively high median salary and a wide range of salaries, including several outliers.
+Other countries also show significant variations, with some having more outliers indicating higher salaries.
+Disparities in salary distributions could be influenced by factors such as cost of living, demand for skills, and economic conditions in different regions.
+Nonetheless, as tool for analyzing and understanding global salary trends, this visualization provides a clear comparison of salary distributions across various employee residences.
+
+X-axis: Employee Residence (various country codes)
+Y-axis: Salary in USD (ranging from 0 to 600,000 USD)
+Boxes: Represent the interquartile range (IQR), which contains the middle 50% of the data.
+Horizontal Line Inside the Box: Represents the median salary for that residence.
+Whiskers: Extend from the boxes to the smallest and largest values within 1.5 times the IQR from the quartiles.
+Dots: Represent outliers, which are data points outside the whiskers.
+
+```{r}
+# Boxplot for Salary Distribution with adjusted margins
+ggplot(full_time_data, aes(x = employee_residence, y = salary_in_usd)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Salary Distribution: U.S. vs Offshore",
+       x = "Employee Residence",
+       y = "Salary in USD") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 8)) +
+  theme(plot.margin = unit(c(1,1,1,2), "cm")) %>% 
+  print()
+```
+
+#  Bar graph for Average Salary by Experience Level (U.S. versus Offshore)
+
+The bar graph provides a clear visual comparison of average salaries for different experience levels across U.S. and Offshore locations.
+U.S.-based employees have higher average salaries compared to their offshore counterparts across all experience levels.
+This highlights potential salary gaps and can inform strategic decisions regarding competitive compensation offers by emphasizing the importance of considering geographic location and experience level in salary planning.
+X-Axis: Experience Level (with categories: Entry Level, Mid-Level, Senior Level, Executive Level)
+Y-Axis: Average Salary in USD
+
+```{r}
+# Bar plot for Average Salary by Experience Level in U.S. and Offshore
+avg_salary_experience <- full_time_data %>%
+  group_by(employee_residence, experience_level) %>%
+  summarize(avg_salary = mean(salary_in_usd, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+```{r}
+
+ggplot(avg_salary_experience, aes(x = experience_level, y = avg_salary, fill = employee_residence)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Average Salary by Experience Level: U.S. vs Offshore",
+       x = "Experience Level",
+       y = "Average Salary in USD",
+       fill = "Employee Residence") +
+  theme(plot.title = element_text(size = 10, hjust = 0.5)) %>% 
+  print()
+
+```
+
+# Scatter plot for Salary versus Remote Work Ratio
+
+The scatter plot represents the relationship between salary in USD and remote work ratio for employees from different countries, emphasizing the salary distribution. 
+Salaries vary widely across all remote ratios. 
+Some employees in the fully remote category (100% remote ratio) are earning higher salaries, indicating that remote work may be associated with more competitive compensation for certain roles in in certain regions.
+
+X-Axis (Remote Ratio): This axis represents the percentage of work that employees perform remotely, ranging from 0% (fully on-site) to 100% (fully remote).
+Y-Axis (Salary in USD): This axis shows the salaries of the employees, measured in US dollars.
+Color (Employee Residence): Each color represents a different country where the employees reside.
+
+```{r}
+# Scatter plot for Salary versus Remote Work Ratio
+ggplot(full_time_data, aes(x = remote_ratio, y = salary_in_usd, color = employee_residence)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Salary vs Remote Ratio",
+       x = "Remote Ratio",
+       y = "Salary in USD",
+       color = "Employee Residence") %>%
+  print()
+```
+
+#  Strategic Salary Recommendations
+
+Balancing U.S. and Offshore Data Science Compensation in a Competitive Market
+
+
+```{r}
+# Conclusion based on the analysis
+cat("Based on the analysis, I recommend the following:  
+    For U.S.-based data scientists, 
+    the average salary is around", us_summary$avg_salary, 
+    "USD, 
+    while offshore data scientists have an average 
+    salary of approximately", offshore_summary$avg_salary,"USD.
+    To attract top talent, especially in a competitive market, 
+    consider offering salaries at or above these averages 
+    depending on the candidate's experience and expertise.
+    Considering a notable relationship between the remote 
+    work ratio and salary distribution for employees across 
+    different countries, as well as, current trends in the 
+    influence of remote work on hiring salary, more 
+    competitive compensation may be necessary for roles 
+    allowing full remote work.  
+    
+    These considerations may help set competitive salaries 
+    based on average salaries, remote work ratios, 
+    and geographical locations. It can also inform decisions 
+    about remote work policies and assist in developing 
+    guidelines and policies that support fair compensation 
+    practices.")
+```
+
+
+
+
+
+```{r}
+company_data <- data %>% filter(employment_type == "FT")
+# Summarize the full_time_data dataframe
+summary(full_time_data)
+
+# Display the first few rows of the full_time_data dataframe
+head(full_time_data)
+
+# List the column names of the full_time_data dataframe
+colnames(full_time_data)
+```
+
+```{r}
+# Filter data for full-time employees and calculate the averages
+average_remote_work <- company_data %>%
+  filter(employment_type == "FT") %>%
+  group_by(company_location, job_title, remote_ratio) %>%
+  summarise(average_percentage = mean(as.numeric(remote_ratio), na.rm = TRUE) * 100) %>%
+  ungroup()
+
+
+```
+
+
+```{r}
+# Filter data for full-time employees and calculate the averages
+average_remote_work <- company_data %>%
+  filter(employment_type == "FT") %>%
+  mutate(group = ifelse(company_location == "US", "US", "Offshore")) %>%
+  group_by(group, company_size, remote_ratio) %>%
+  summarise(average_percentage = n() / nrow(company_data) * 100) %>%
+  ungroup()
+
+# Reshape the data for better readability
+average_remote_work_table <- average_remote_work %>%
+  pivot_wider(names_from = remote_ratio, values_from = average_percentage, names_prefix = "Remote_") %>%
+  rename(Remote_0 = `Remote_0`, Remote_50 = `Remote_50`, Remote_100 = `Remote_100`) %>%
+  arrange(group, company_size)
+
+```
+
+#  Average Percentage of Full-Time Employees Working Remotely by Company Size and Group (US versus Offshore)
+
+The data represented in chart indicates that US companies, especially medium-sized ones, have a higher percentage of full-time employees working remotely compared to Offshore companies.
+
+Remote work trends across different company sizes and geographical locations highlight the variations in the adoption of remote work between large, medium, and small companies in the US and Offshore. 
+
+```{r}
+# Display the data as a table
+kable(average_remote_work_table, caption = "Average Percentage of Full-Time Employees Working 
+      Remotely by Company Size and Group (US/Offshore)",
+      col.names = c("Group", "Company Size", "0% Remote", "50% Remote", "100% Remote"))
+
+```
+
+```{r}
+#{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+```
+
